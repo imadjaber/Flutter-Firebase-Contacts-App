@@ -1,0 +1,229 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
+import '../../../../global/common/toast.dart';
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class Contact {
+  String name;
+  String contact;
+
+  Contact({required this.name, required this.contact});
+}
+
+
+class _HomePageState extends State<HomePage> {
+  TextEditingController nameController = TextEditingController();
+  TextEditingController contactController = TextEditingController();
+  List<Contact> contacts = List.empty(growable: true);
+  int selectedIndex = -1;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        title: const Text(
+          'Your Contacts',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20.0,
+            fontWeight: FontWeight.bold,
+            fontStyle: FontStyle.italic,
+            letterSpacing: 2.5,
+            shadows: [
+              Shadow(
+                color: Colors.black,
+                blurRadius: 2,
+                offset: Offset(1, 1),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: Colors.green,
+      ),
+
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            Image(
+              image: AssetImage('images/add.png'),
+              width: 150,
+              height: 150,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                hintText: 'Contact Name',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(100),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: contactController,
+              keyboardType: TextInputType.number,
+              maxLength: 10,
+              decoration: const InputDecoration(
+                hintText: 'Contact Number',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(100),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    String name = nameController.text.trim();
+                    String contact = contactController.text.trim();
+                    if (name.isNotEmpty && contact.isNotEmpty) {
+                      setState(() {
+                        nameController.text = '';
+                        contactController.text = '';
+                        contacts.add(Contact(name: name, contact: contact));
+                      });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: Colors.green,
+                    onPrimary: Colors.white,
+                    minimumSize: Size(150, 50),
+                  ),
+                  child: const Text('Save'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    String name = nameController.text.trim();
+                    String contact = contactController.text.trim();
+                    if (name.isNotEmpty && contact.isNotEmpty) {
+                      setState(() {
+                        nameController.text = '';
+                        contactController.text = '';
+                        contacts[selectedIndex].name = name;
+                        contacts[selectedIndex].contact = contact;
+                        selectedIndex = -1;
+                      });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: Colors.blue,
+                    onPrimary: Colors.white,
+                    minimumSize: Size(150, 50),
+                  ),
+                  child: const Text('Update'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            contacts.isEmpty
+                ? const Text(
+              'No Contact yet...',
+              style: TextStyle(fontSize: 22),
+            )
+                : Expanded(
+              child: ListView.builder(
+                itemCount: contacts.length,
+                itemBuilder: (context, index) => getRow(index),
+              ),
+            ),
+            const SizedBox(height: 30),
+            GestureDetector(
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushNamedAndRemoveUntil(
+                    context, "/login", (route) => false);
+                showToast(message: "Successfully signed out");
+              },
+              child: Container(
+                height: 45,
+                width: 100,
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    "Sign out",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget getRow(int index) {
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor:
+          index % 2 == 0 ? Colors.black: Colors.black38,
+          foregroundColor: Colors.white,
+          child: Text(
+            contacts[index].name[0],
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              contacts[index].name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(contacts[index].contact),
+          ],
+        ),
+        trailing: SizedBox(
+          width: 70,
+          child: Row(
+            children: [
+              InkWell(
+                onTap: () {
+                  nameController.text = contacts[index].name;
+                  contactController.text = contacts[index].contact;
+                  setState(() {
+                    selectedIndex = index;
+                  });
+                },
+                child: const Icon(Icons.edit),
+              ),
+              InkWell(
+                onTap: (() {
+                  setState(() {
+                    contacts.removeAt(index);
+                  });
+                }),
+                child: const Icon(Icons.delete),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
